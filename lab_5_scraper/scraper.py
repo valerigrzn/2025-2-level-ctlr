@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup, Tag
 from core_utils.article.article import Article
 from core_utils.config_dto import ConfigDTO
 from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
+from core_utils.article.io import to_meta, to_raw
 
 class IncorrectSeedURLError(Exception):
      """Seed URL does not match standard pattern."""
@@ -46,7 +47,7 @@ class Config:
     Class for unpacking and validating configurations.
     """
 
-    def __init__(self, path_to_config: pathlib.Path) -> None:
+    def __init__(self, path_to_config: pathlib.Path = CRAWLER_CONFIG_PATH) -> None:
         """
         Initialize an instance of the Config class.
 
@@ -57,7 +58,7 @@ class Config:
         self._config_dto = self._extract_config_content()
         self._validate_config_content()
         self._seed_urls = self._config_dto.seed_urls
-        self._num_articles = self._config_dto.total_articles_to_find_and_parse
+        self._num_articles = self._config_dto.total_articles
         self._headers = self._config_dto.headers
         self._encoding = self._config_dto.encoding
         self._timeout = self._config_dto.timeout
@@ -93,8 +94,8 @@ class Config:
         for url in self._config_dto.seed_urls:
             if not isinstance(url, str) or not pattern.match(url):
                 raise IncorrectSeedURLError(f'Invalid seed URL: {url}')
- 
-        total = self._config_dto.total_articles_to_find_and_parse
+        
+        total = self._config_dto.total_articles
         if not isinstance(total, int) or total <= 0:
             raise IncorrectNumberOfArticlesError('Total articles must be a positive integer')
         if total > 150:
