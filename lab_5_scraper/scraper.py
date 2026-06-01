@@ -16,9 +16,10 @@ import requests
 from bs4 import BeautifulSoup, Tag
 
 from core_utils.article.article import Article
+from core_utils.article.io import to_meta, to_raw
 from core_utils.config_dto import ConfigDTO
 from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
-from core_utils.article.io import to_meta, to_raw
+
 
 class IncorrectSeedURLError(Exception):
      """Seed URL does not match standard pattern."""
@@ -207,7 +208,7 @@ def make_request(url: str, config: Config) -> requests.models.Response:
         response.raise_for_status()
         return response
     except requests.exceptions.RequestException:
-        return None
+        return response
 
 
 class Crawler:
@@ -279,10 +280,11 @@ class Crawler:
             if len(self.urls) < needed:
                 next_link = soup.find('a', rel='next')
                 if next_link and next_link.get('href'):
-                    next_url = urljoin(current_url, next_link['href'])
-                    if next_url not in visited:
-                        to_visit.append(next_url)
- 
+                    href = next_link.get('href')
+                    if isinstance(href, str):
+                        next_url = urljoin(current_url, href)
+                        if next_url not in visited:
+                            to_visit.append(next_url)
         self.urls = self.urls[:needed]
 
     def get_search_urls(self) -> list:
@@ -452,8 +454,8 @@ def main() -> None:
         parser = HTMLParser(url, idx, config)
         article = parser.parse()
         if isinstance(article, Article):
-            to_raw(article, pathlib.Path(ASSETS_PATH))
-            to_meta(article, pathlib.Path(ASSETS_PATH))
+            to_raw(article)
+            to_meta(article)
     print(f"Done. Parsed {len(crawler.urls)} articles.")
 
 
