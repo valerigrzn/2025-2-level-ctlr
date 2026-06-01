@@ -1,5 +1,5 @@
 """
-Crawler implementation.
+Crawler implementation for royallib.com (mark 8).
 """
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
@@ -24,20 +24,26 @@ from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 class IncorrectSeedURLError(Exception):
     """Seed URL does not match standard pattern."""
 
+
 class NumberOfArticlesOutOfRangeError(Exception):
     """Total number of articles is out of range from 1 to 150."""
+
 
 class IncorrectNumberOfArticlesError(Exception):
     """Total number of articles to parse is not integer or less than 0."""
 
+
 class IncorrectHeadersError(Exception):
     """Headers are not in a form of dictionary."""
+
 
 class IncorrectEncodingError(Exception):
     """Encoding must be specified as a string."""
 
+
 class IncorrectTimeoutError(Exception):
     """Timeout value must be a positive integer less than 60."""
+
 
 class IncorrectVerifyError(Exception):
     """Verify certificate and headless mode values must either be True or False."""
@@ -78,12 +84,12 @@ class Config:
         return ConfigDTO(
             seed_urls=data.get('seed_urls', []),
             headers=data.get('headers', {}),
-            total_articles_to_find_and_parse=data.get('total_articles_to_find_and_parse', 0),
+            total_articles=data.get('total_articles_to_find_and_parse', 0),
             encoding=data.get('encoding', 'utf-8'),
             timeout=data.get('timeout', 30),
             should_verify_certificate=data.get('should_verify_certificate', True),
             headless_mode=data.get('headless_mode', False),
-         )
+        )
 
     def _validate_config_content(self) -> None:
         """
@@ -117,7 +123,6 @@ class Config:
 
         if not isinstance(self._config_dto.headless_mode, bool):
             raise IncorrectVerifyError('headless_mode must be a boolean')
-
 
     def get_seed_urls(self) -> list[str]:
         """
@@ -164,7 +169,6 @@ class Config:
         """
         return self._timeout
 
-
     def get_verify_certificate(self) -> bool:
         """
         Retrieve whether to verify certificate.
@@ -173,7 +177,6 @@ class Config:
             bool: Whether to verify certificate or not
         """
         return self._should_verify_certificate
-
 
     def get_headless_mode(self) -> bool:
         """
@@ -258,8 +261,9 @@ class Crawler:
                 continue
             visited.add(current_url)
 
-            response = make_request(current_url, self.config)
-            if not response:
+            try:
+                response = make_request(current_url, self.config)
+            except requests.exceptions.RequestException:
                 continue
 
             soup = BeautifulSoup(response.text, 'lxml')
@@ -317,11 +321,17 @@ class HTMLParser:
     def _fill_article_with_text(self, article_soup: BeautifulSoup) -> None:
         """
         Find text of article.
-
-        Args:
-            article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        text_div = article_soup.find('div', class_='text') or article_soup.find('div', id='content')
+        # Try multiple common containers
+        candidates = [
+            article_soup.find('div', class_='text'),
+            article_soup.find('div', id='content'),
+            article_soup.find('div', class_='bb-text'),
+            article_soup.find('pre'),
+            article_soup.find('article'),
+            article_soup.find('main')
+        ]
+        text_div = next((c for c in candidates if c), None)
         if not text_div:
             self.article.text = ''
             return
@@ -336,13 +346,10 @@ class HTMLParser:
     def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
         """
         Find meta information of article.
-
-        Args:
-            article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
         title_tag = article_soup.find('h1')
         self.article.title = title_tag.get_text(strip=True) if title_tag else ''
- 
+
         author_elem = article_soup.find('a', href=re.compile(r'/author/'))
         if author_elem:
             self.article.author = [author_elem.get_text(strip=True)]
@@ -356,15 +363,16 @@ class HTMLParser:
                         break
             else:
                 self.article.author = ['NOT FOUND']
- 
+
         date_str = ''
         for elem in article_soup.find_all(string=re.compile(r'Добавлена:')):
             date_str = elem.strip().replace('Добавлена:', '').strip()
             break
         if date_str:
-             self.article.date = self.unify_date_format(date_str)
+            self.article.date = self.unify_date_format(date_str)
         else:
             self.article.date = datetime.datetime.now()
+
         topics = []
         for gl in article_soup.find_all('a', href=re.compile(r'/genre/')):
             topics.append(gl.get_text(strip=True))
@@ -402,7 +410,6 @@ class HTMLParser:
         except ValueError:
             return datetime.datetime.now()
 
-
     def parse(self) -> Article | bool:
         """
         Parse each article.
@@ -410,14 +417,14 @@ class HTMLParser:
         Returns:
             Article | bool: Article instance, False in case of request error
         """
-        response = make_request(self.full_url, self.config)
-        if not response:
+        try:
+            response = make_request(self.full_url, self.config)
+        except requests.exceptions.RequestException:
             return False
         soup = BeautifulSoup(response.text, 'lxml')
         self._fill_article_with_text(soup)
         self._fill_article_with_meta_information(soup)
         return self.article
-
 
 
 def prepare_environment(base_path: pathlib.Path | str) -> None:
@@ -431,7 +438,6 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
     if path.exists():
         shutil.rmtree(path)
     path.mkdir(parents=True, exist_ok=True)
-
 
 
 def main() -> None:
