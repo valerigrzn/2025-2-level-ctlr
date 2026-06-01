@@ -65,7 +65,7 @@ class Config:
         self._config_dto = self._extract_config_content()
         self._validate_config_content()
         self._seed_urls = self._config_dto.seed_urls
-        self._num_articles = self._config_dto.total_articles
+        self._num_articles = self._config_dto.total_articles_to_find_and_parse
         self._headers = self._config_dto.headers
         self._encoding = self._config_dto.encoding
         self._timeout = self._config_dto.timeout
@@ -84,7 +84,7 @@ class Config:
         return ConfigDTO(
             seed_urls=data.get('seed_urls', []),
             headers=data.get('headers', {}),
-            total_articles=data.get('total_articles_to_find_and_parse', 0),
+            total_articles_to_find_and_parse=data.get('total_articles_to_find_and_parse', 0),
             encoding=data.get('encoding', 'utf-8'),
             timeout=data.get('timeout', 30),
             should_verify_certificate=data.get('should_verify_certificate', True),
@@ -102,7 +102,7 @@ class Config:
             if not isinstance(url, str) or not pattern.match(url):
                 raise IncorrectSeedURLError(f'Invalid seed URL: {url}')
 
-        total = self._config_dto.total_articles
+        total = self._config_dto.total_articles_to_find_and_parse
         if not isinstance(total, int) or total <= 0:
             raise IncorrectNumberOfArticlesError('Total articles must be a positive integer')
         if total > 150:
@@ -322,7 +322,6 @@ class HTMLParser:
         """
         Find text of article.
         """
-        # Try multiple common containers
         candidates = [
             article_soup.find('div', class_='text'),
             article_soup.find('div', id='content'),
