@@ -323,25 +323,29 @@ class HTMLParser:
         """
         Find text of article.
         """
-        candidates = [
-            article_soup.find('div', class_='text'),
-            article_soup.find('div', id='content'),
-            article_soup.find('div', class_='bb-text'),
-            article_soup.find('pre'),
-            article_soup.find('article'),
-            article_soup.find('main')
-        ]
-        text_div = next((c for c in candidates if c), None)
+        text_div = article_soup.find('div', class_='text')
+        if not text_div:
+            text_div = article_soup.find('pre')
+        if not text_div:
+            text_div = article_soup.find('div', id='content')          # !!!
+        if not text_div:
+            text_div = article_soup.find('body')                       # !!! fallback
+
         if not text_div:
             self.article.text = ''
             return
-        for unwanted in text_div(['script', 'style']):
+
+        # Удаляем служебные блоки
+        for unwanted in text_div(['script', 'style', 'a.button', 'div.download',
+                                  'nav', 'header', 'footer', 'aside']):   # !!!
             unwanted.decompose()
+
         paragraphs = text_div.find_all('p')
         if paragraphs:
             self.article.text = '\n\n'.join(p.get_text(strip=True) for p in paragraphs)
         else:
-            self.article.text = text_div.get_text(strip=True)
+            raw_text = text_div.get_text(strip=True)
+            self.article.text = '\n\n'.join(line.strip() for line in raw_text.splitlines() if line.strip())
 
     def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
         """
