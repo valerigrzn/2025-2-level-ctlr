@@ -255,7 +255,7 @@ class Crawler:
         needed = self.config.get_num_articles()
         to_visit = list(self.config.get_seed_urls())
         visited = set()
-        max_pages = 200
+        max_pages = 100
         pages_processed = 0
 
 
