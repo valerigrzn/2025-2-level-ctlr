@@ -1,5 +1,6 @@
 """
-Crawler implementation for royallib.com (mark 8).
+Crawler implementation.
+Crawler implementation for royallib.com
 """
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
@@ -292,7 +293,7 @@ class Crawler:
         Returns:
             list: seed_urls param
         """
-        return self.urls
+        return self.config.get_seed_urls()
 
 
 # 10
