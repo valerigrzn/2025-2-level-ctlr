@@ -33,17 +33,17 @@ except ImportError:
 
 class EmptyDirectoryError(Exception):
     """Raised when the directory is empty."""
-    pass
+
 
 
 class EmptyFileError(Exception):
     """Raised when a file is empty."""
-    pass
+
 
 
 class InconsistentDatasetError(Exception):
     """Raised when the dataset is inconsistent."""
-    pass
+
 
 
 class CorpusManager:
@@ -98,8 +98,8 @@ class CorpusManager:
         Register each dataset entry.
         """
         for file_path in self._path.glob("*_raw.txt"):
-            article_id = int(file_path.stem.split("_")[0])
-            self._storage[article_id] = Article(url=None, article_id=article_id)
+            article = from_raw(file_path)
+            self._storage[article.article_id] = article
 
     def get_articles(self) -> dict:
         """
@@ -134,8 +134,9 @@ class TextProcessingPipeline(PipelineProtocol):
         Perform basic preprocessing and write processed text to files.
         """
         for article in self._corpus.get_articles().values():
-            from_raw(article)
             raw_text = article.text
+            if not raw_text:
+                continue
 
             cleaned = raw_text.lower()
             cleaned = re.sub(r'[^\w\s]', '', cleaned)
@@ -328,7 +329,6 @@ class PatternSearchPipeline(PipelineProtocol):
             node_id (int): ID of root node of the match
             tree_node (TreeNode): Root node of the match
         """
-        pass
 
     def _find_pattern(self, doc_graphs: list) -> dict[int, list[TreeNode]]:
         """
@@ -346,7 +346,6 @@ class PatternSearchPipeline(PipelineProtocol):
         """
         Search for a pattern in documents and writes found information to JSON file.
         """
-        pass
 
 
 def main() -> None:
