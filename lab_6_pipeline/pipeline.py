@@ -236,7 +236,7 @@ class UDPipeAnalyzer(LibraryWrapper):
         parser = ConllParser(self._analyzer)
         with open(conllu_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        return parser.parse_conll_text_as_spacy(content.strip())
+        return parser.parse_conll_text_as_spacy(content.strip())  # type: ignore[no-any-return]
 
 
 class POSFrequencyPipeline:
