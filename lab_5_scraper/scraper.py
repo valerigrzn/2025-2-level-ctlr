@@ -248,7 +248,7 @@ class Crawler:
             return ''
         full_url = urljoin('https://royallib.com', href)
         if re.search(r'/book/.*\.html', full_url):
-            return full_url
+            return str(full_url)
         return ''
 
     def find_articles(self) -> None:
